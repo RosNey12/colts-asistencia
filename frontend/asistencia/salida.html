@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Salida - Mini Abarrotes COLT'S</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/qr.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería para escanear QR -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- SUPABASE JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Administrador</h3>
+                <p id="userEmail">colts</p>
+                <span class="user-status online">
+                    <i class="fas fa-circle"></i> En línea
+                </span>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="../dashboard.html">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">ASISTENCIA</span>
+            </li>
+            <li class="menu-item">
+                <a href="entrada.html">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Registrar Entrada</span>
+                </a>
+            </li>
+            <li class="menu-item active">
+                <a href="salida.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Registrar Salida</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="dia.html">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Asistencia del Día</span>
+                    <span class="badge" id="asistenciaHoy">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">EMPLEADOS</span>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/registro.html">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Agregar Empleado</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/lista.html">
+                    <i class="fas fa-users"></i>
+                    <span>Lista de Empleados</span>
+                    <span class="badge" id="empleadosCount">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">SISTEMA</span>
+            </li>
+            <li class="menu-item">
+                <a href="#" id="backToDashboard">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver al Inicio</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-section">
+            <a href="#" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Registrar Salida</h1>
+                <div class="breadcrumb">
+                    <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Registrar Salida</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-time" id="dateTime">
+                    <span id="currentDate">Cargando...</span>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scanner Container -->
+        <div class="scanner-container">
+            <div class="scanner-header">
+                <h2><i class="fas fa-qrcode"></i> Escanear Código QR de Salida</h2>
+                <p>Posiciona el código QR del empleado frente a la cámara para registrar su salida</p>
+            </div>
+
+            <div class="scanner-main">
+                <!-- Camera Section -->
+                <div class="camera-section">
+                    <div class="camera-header">
+                        <h3><i class="fas fa-camera"></i> Cámara de Escaneo</h3>
+                        <div class="camera-controls">
+                            <div class="camera-selector">
+                                <label for="cameraSelect"><i class="fas fa-video"></i> Cámara:</label>
+                                <select id="cameraSelect" class="camera-select">
+                                    <option value="">Seleccionando...</option>
+                                </select>
+                            </div>
+                            <button class="btn-secondary" id="toggleCamera">
+                                <i class="fas fa-sync-alt"></i> Cambiar Cámara
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="camera-wrapper" id="cameraWrapper">
+                        <div id="qrReader"></div>
+                        <div class="scanner-overlay">
+                            <div class="scanner-frame"></div>
+                            <div class="scanner-guide">
+                                <i class="fas fa-hand-point-up"></i>
+                                <p>Alinea el código QR dentro del marco</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="camera-status">
+                        <div class="status-indicator" id="cameraStatus">
+                            <i class="fas fa-circle"></i>
+                            <span>Preparando cámara...</span>
+                        </div>
+                        <div class="scan-count">
+                            <i class="fas fa-bolt"></i>
+                            <span>Salidas hoy: <strong id="scanCount">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Entry & Recent Activity -->
+                <div class="side-panel">
+                    <!-- Manual Entry -->
+                    <div class="manual-entry">
+                        <h3><i class="fas fa-hand-pointer"></i> Registro Manual</h3>
+                        <p class="panel-description">Si el empleado olvidó su QR, selecciónalo manualmente:</p>
+                        
+                        <div class="search-employee">
+                            <input type="text" id="searchEmployee" placeholder="Buscar empleado...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        
+                        <div class="employee-list" id="employeeList">
+                            <div class="loading-employees">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Cargando lista de empleados...</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary full-width" id="manualRegisterBtn" disabled>
+                            <i class="fas fa-user-check"></i> Registrar Salida Manual
+                        </button>
+                    </div>
+
+                    <!-- Pending Departures -->
+                    <div class="recent-entries">
+                        <h3><i class="fas fa-user-clock"></i> Pendientes de Salida</h3>
+                        <div class="entries-list" id="pendingDepartures">
+                            <div class="empty-entries">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Todos han registrado salida</span>
+                            </div>
+                        </div>
+                        <button class="btn-text" id="viewAllEntries">
+                            Ver todas las salidas <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scanner Controls -->
+            <div class="scanner-controls">
+                <button class="btn-control" id="startScanner">
+                    <i class="fas fa-play"></i> Iniciar Escáner
+                </button>
+                <button class="btn-control secondary" id="stopScanner" disabled>
+                    <i class="fas fa-stop"></i> Detener Escáner
+                </button>
+                <button class="btn-control" id="toggleTorch" disabled>
+                    <i class="fas fa-lightbulb"></i> Luz
+                </button>
+                <button class="btn-control" id="toggleBeep">
+                    <i class="fas fa-volume-up"></i> Sonido
+                </button>
+                <button class="btn-control" id="autoExitBtn">
+                    <i class="fas fa-robot"></i> Auto-salida
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-card mini">
+                <div class="stat-icon success">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Con Salida</h3>
+                    <p class="stat-number" id="salidasCount">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon warning">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Pendientes</h3>
+                    <p class="stat-number" id="pendientesCount">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon danger">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Sin Entrada</h3>
+                    <p class="stat-number" id="sinEntradaCount">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Hora Actual</h3>
+                    <p class="stat-number" id="currentHour">--:--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Instrucciones</h3>
+            <div class="instruction-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Escanear QR</h4>
+                        <p>Usa la cámara para escanear el código del empleado</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Registro Manual</h4>
+                        <p>Si olvidó su QR, selecciónalo de la lista</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Auto-salida</h4>
+                        <p>A las 10:00 PM se registra salida automática</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-store"></i>
+                    <span>Mini Abarrotes COLT'S</span>
+                </div>
+                <div class="footer-copyright">
+                    <p><i class="fas fa-copyright"></i> 2026 Sistema de Control de Asistencia</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Notifications Container -->
+    <div id="notifications"></div>
+
+    <!-- Modal para confirmar registro manual -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-check"></i> Confirmar Salida</h3>
+                <button class="modal-close" id="closeConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="employee-preview" id="employeePreview">
+                    <div class="preview-photo">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="preview-info">
+                        <h4 id="previewName">Nombre del Empleado</h4>
+                        <p id="previewPuesto">Puesto</p>
+                        <p class="preview-time">
+                            Entrada: <span id="previewEntrada">--:--</span>
+                        </p>
+                        <p class="preview-time">
+                            Salida: <span id="previewSalida">--:--</span>
+                        </p>
+                    </div>
+                </div>
+                <p class="confirm-message">¿Registrar salida para este empleado?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelRegister">Cancelar</button>
+                <button class="btn-success" id="confirmRegister">
+                    <i class="fas fa-check"></i> Registrar Salida
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para resultado de escaneo -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header success">
+                <h3><i class="fas fa-check-circle"></i> Salida Registrada</h3>
+                <button class="modal-close" id="closeResultModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="result-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4 id="resultEmployeeName">Empleado</h4>
+                <p class="result-time">
+                    Entrada: <span id="resultEntrada">--:--</span>
+                </p>
+                <p class="result-time">
+                    Salida: <span id="resultSalida">--:--</span>
+                </p>
+                <p class="result-hours">
+                    Horas trabajadas: <strong id="resultHours">0.00</strong>
+                </p>
+                <p class="result-message" id="resultMessage">Salida registrada exitosamente</p>
+                
+                <div class="result-actions">
+                    <button class="btn-secondary" id="scanAgain">
+                        <i class="fas fa-redo"></i> Escanear Otro
+                    </button>
+                    <button class="btn-primary" id="goToDashboard">
+                        <i class="fas fa-home"></i> Ir al Inicio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/common.js"></script>
+    <script src="../js/qr-scanner.js"></script>
+</body>
+</html>

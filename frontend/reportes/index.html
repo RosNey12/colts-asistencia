@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Mini Abarrotes COLT'S</title>
+    <!-- CSS Principal - usa responsive.css (mismos estilos que dashboard) -->
+    <link rel="stylesheet" href="../css/responsive.css">
+    <!-- Estilos adicionales específicos para reportes -->
+    <style>
+        /* Estilos específicos para reportes (manteniendo la paleta de colores) */
+        .reportes-container {
+            padding: 2rem;
+        }
+
+        .filtros-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--medium-gray);
+        }
+
+        .filtros-card h3 {
+            font-family: var(--font-title);
+            color: var(--primary-blue);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .filtros-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--darker-gray);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group label i {
+            color: var(--primary-blue);
+            width: 18px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            transition: var(--transition-fast);
+            background: var(--white);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 45, 230, 0.1);
+        }
+
+        .filtros-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            border-top: 1px solid var(--medium-gray);
+            padding-top: 1.5rem;
+        }
+
+        .tabla-reporte {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--medium-gray);
+            overflow-x: auto;
+        }
+
+        .tabla-reporte h3 {
+            font-family: var(--font-title);
+            color: var(--primary-blue);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Estilos para la tabla de reportes (hereda de data-table pero con ajustes) */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: var(--white);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--medium-gray);
+            color: var(--darker-gray);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--light-gray);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Resumen de totales */
+        .resumen-totales {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .total-card {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .total-card i {
+            font-size: 2rem;
+            opacity: 0.9;
+        }
+
+        .total-info h4 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.25rem;
+        }
+
+        .total-info .total-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-family: var(--font-title);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .reportes-container {
+                padding: 1rem;
+            }
+
+            .filtros-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filtros-actions {
+                flex-direction: column;
+            }
+
+            .filtros-actions button {
+                width: 100%;
+            }
+
+            .tabla-reporte {
+                padding: 1rem;
+            }
+        }
+    </style>
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation (igual que en dashboard) -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Administrador</h3>
+                <p id="userEmail">colts</p>
+                <span class="user-status online">
+                    <i class="fas fa-circle"></i> En línea
+                </span>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="../dashboard.html">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">EMPLEADOS</span>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/registro.html">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Agregar Empleado</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/lista.html">
+                    <i class="fas fa-users"></i>
+                    <span>Lista de Empleados</span>
+                    <span class="badge" id="empleadosCount">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">ASISTENCIA</span>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/entrada.html">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Registrar Entrada</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/salida.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Registrar Salida</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/dia.html">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Asistencia del Día</span>
+                    <span class="badge" id="asistenciaHoy">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">REPORTES</span>
+            </li>
+            <li class="menu-item active">
+                <a href="index.html">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Reportes Excel</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">SISTEMA</span>
+            </li>
+            <li class="menu-item">
+                <a href="#" id="backToDashboard">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver al Inicio</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-section">
+            <a href="#" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+            <div class="system-info">
+                <p><i class="fas fa-database"></i> Supabase Conectado</p>
+                <p class="version">v1.0.0</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Reportes de Asistencia</h1>
+                <div class="breadcrumb">
+                    <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Reportes Excel</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-time" id="dateTime">
+                    <span id="currentDate">Cargando...</span>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Contenido de Reportes -->
+        <div class="reportes-container">
+            <!-- Tarjeta de Filtros -->
+            <div class="filtros-card">
+                <h3>
+                    <i class="fas fa-filter"></i>
+                    Filtros de Búsqueda
+                </h3>
+                
+                <div class="filtros-grid">
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-calendar-alt"></i>
+                            Tipo de Reporte
+                        </label>
+                        <select id="tipoReporte">
+                            <option value="dia">Por Día</option>
+                            <option value="semana">Por Semana</option>
+                            <option value="mes">Por Mes</option>
+                            <option value="rango">Rango Personalizado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="fechaGroup">
+                        <label>
+                            <i class="fas fa-calendar-day"></i>
+                            Fecha
+                        </label>
+                        <input type="date" id="fecha" value="">
+                    </div>
+                    
+                    <div class="form-group" id="rangoGroup" style="display: none;">
+                        <label>
+                            <i class="fas fa-calendar-plus"></i>
+                            Desde
+                        </label>
+                        <input type="date" id="fechaInicio">
+                        
+                        <label style="margin-top: 0.5rem;">
+                            <i class="fas fa-calendar-check"></i>
+                            Hasta
+                        </label>
+                        <input type="date" id="fechaFin">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-user"></i>
+                            Empleado
+                        </label>
+                        <select id="empleadoFiltro">
+                            <option value="todos">Todos los empleados</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filtros-actions">
+                    <button class="btn-primary" id="generarReporte">
+                        <i class="fas fa-search"></i>
+                        Generar Reporte
+                    </button>
+                    <button class="btn-success" id="exportarExcel">
+                        <i class="fas fa-file-excel"></i>
+                        Exportar a Excel
+                    </button>
+                    <button class="btn-secondary" id="limpiarFiltros">
+                        <i class="fas fa-eraser"></i>
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de Resultados -->
+            <div class="tabla-reporte">
+                <h3>
+                    <i class="fas fa-table"></i>
+                    Resultados
+                    <span style="font-size: 0.9rem; color: var(--dark-gray); margin-left: auto;" id="totalRegistros">
+                        0 registros
+                    </span>
+                </h3>
+                
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="reporteTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Empleado</th>
+                                <th>Puesto</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Horas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reporteBody">
+                            <tr>
+                                <td colspan="6" class="loading" style="text-align: center; padding: 3rem;">
+                                    <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
+                                    <div>Selecciona filtros y genera un reporte</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Resumen de Totales (aparece cuando hay datos) -->
+            <div class="resumen-totales" id="resumenTotales" style="display: none;">
+                <div class="total-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <div class="total-info">
+                        <h4>Días en período</h4>
+                        <span class="total-number" id="totalDias">0</span>
+                    </div>
+                </div>
+                <div class="total-card">
+                    <i class="fas fa-clock"></i>
+                    <div class="total-info">
+                        <h4>Total horas</h4>
+                        <span class="total-number" id="totalHoras">0.00</span>
+                    </div>
+                </div>
+                <div class="total-card">
+                    <i class="fas fa-users"></i>
+                    <div class="total-info">
+                        <h4>Registros</h4>
+                        <span class="total-number" id="totalRegistrosNum">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-store"></i>
+                    <span>Mini Abarrotes COLT'S</span>
+                </div>
+                <div class="footer-copyright">
+                    <p><i class="fas fa-copyright"></i> 2026 Sistema de Control de Asistencia</p>
+                    <p class="footer-version">Desarrollado para Mini Abarrotes COLT'S</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Notifications Container -->
+    <div id="notifications"></div>
+
+    <!-- Scripts -->
+    <script src="../js/common.js"></script>
+    <script src="../js/reportes.js"></script>
+</body>
+</html>

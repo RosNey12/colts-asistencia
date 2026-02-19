@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia del Día - Mini Abarrotes COLT'S</title>
+    <!-- CSS Principal - usa responsive.css que contiene todos los estilos -->
+    <link rel="stylesheet" href="../css/responsive.css">
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Administrador</h3>
+                <p id="userEmail">colts</p>
+                <span class="user-status online">
+                    <i class="fas fa-circle"></i> En línea
+                </span>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="../dashboard.html">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">EMPLEADOS</span>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/registro.html">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Agregar Empleado</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../empleados/lista.html">
+                    <i class="fas fa-users"></i>
+                    <span>Lista de Empleados</span>
+                    <span class="badge" id="empleadosCount">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">ASISTENCIA</span>
+            </li>
+            <li class="menu-item">
+                <a href="entrada.html">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Registrar Entrada</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="salida.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Registrar Salida</span>
+                </a>
+            </li>
+            <li class="menu-item active">
+                <a href="dia.html">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Asistencia del Día</span>
+                    <span class="badge" id="asistenciaHoy">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">REPORTES</span>
+            </li>
+            <li class="menu-item">
+                <a href="../reportes/index.html">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Reportes Excel</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">SISTEMA</span>
+            </li>
+            <li class="menu-item">
+                <a href="#" id="backToDashboard">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver al Inicio</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-section">
+            <a href="#" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+            <div class="system-info">
+                <p><i class="fas fa-database"></i> Supabase Conectado</p>
+                <p class="version">v1.0.0</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Asistencia del Día</h1>
+                <div class="breadcrumb">
+                    <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Asistencia del Día</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-time" id="dateTime">
+                    <span id="currentDate">Cargando...</span>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2><i class="fas fa-calendar-day"></i> Asistencia del Día</h2>
+            <div class="header-actions">
+                <button class="btn-primary" id="refreshDataBtn">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                
+            </div>
+        </div>
+
+        <!-- Resumen del día -->
+        <div class="stats-cards">
+            <div class="stat-card mini">
+                <div class="stat-icon success">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Presentes</h3>
+                    <p class="stat-number" id="presentesCount">0</p>
+                </div>
+            </div>
+            <div class="stat-card mini">
+                <div class="stat-icon warning">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Pendientes Salida</h3>
+                    <p class="stat-number" id="pendientesCount">0</p>
+                </div>
+            </div>
+            <div class="stat-card mini">
+                <div class="stat-icon danger">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Ausentes</h3>
+                    <p class="stat-number" id="ausentesCount">0</p>
+                </div>
+            </div>
+            <div class="stat-card mini">
+                <div class="stat-icon primary">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Fecha</h3>
+                    <p class="stat-number" id="todayDate">--/--/----</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de asistencia -->
+        <div class="table-container">
+            <table class="data-table" id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Puesto</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th>Horas</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceBody">
+                    <tr>
+                        <td colspan="6" class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Cargando asistencia del día...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-store"></i>
+                    <span>Mini Abarrotes COLT'S</span>
+                </div>
+                <div class="footer-copyright">
+                    <p><i class="fas fa-copyright"></i> 2026 Sistema de Control de Asistencia</p>
+                    <p class="footer-version">Desarrollado para Mini Abarrotes COLT'S</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Notifications Container -->
+    <div id="notifications"></div>
+
+    <!-- Scripts -->
+    <script src="../js/common.js"></script>
+    <script src="../js/asistencia-dia.js"></script>
+</body>
+</html>

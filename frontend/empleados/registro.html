@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Empleado - Mini Abarrotes COLT'S</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/forms.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SUPABASE JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Estilos adicionales para el nuevo formulario */
+        .emergencia-group {
+            background: var(--light-gray);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-top: 1rem;
+        }
+        
+        .emergencia-group h4 {
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Administrador</h3>
+                <p id="userEmail">colts</p>
+                <span class="user-status online">
+                    <i class="fas fa-circle"></i> En línea
+                </span>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="../dashboard.html">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">EMPLEADOS</span>
+            </li>
+            <li class="menu-item active">
+                <a href="registro.html">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Agregar Empleado</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="lista.html">
+                    <i class="fas fa-users"></i>
+                    <span>Lista de Empleados</span>
+                    <span class="badge" id="empleadosCount">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">ASISTENCIA</span>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/entrada.html">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Registrar Entrada</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/salida.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Registrar Salida</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/dia.html">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Asistencia del Día</span>
+                    <span class="badge" id="asistenciaHoy">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">REPORTES</span>
+            </li>
+            <li class="menu-item">
+                <a href="../reportes/index.html">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Reportes Excel</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">SISTEMA</span>
+            </li>
+            <li class="menu-item">
+                <a href="#" id="backToDashboard">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver al Inicio</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-section">
+            <a href="#" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Registrar Nuevo Empleado</h1>
+                <div class="breadcrumb">
+                    <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <a href="lista.html">Empleados</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Nuevo Empleado</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-time" id="dateTime">
+                    <span id="currentDate">Cargando...</span>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h2><i class="fas fa-user-plus"></i> Información del Empleado</h2>
+                <p>Completa todos los campos obligatorios para registrar un nuevo empleado en el sistema</p>
+            </div>
+
+            <form id="empleadoForm" class="empleado-form">
+                <!-- Sección 1: Datos Personales -->
+                <div class="form-section">
+                    <h3><i class="fas fa-id-card"></i> Datos Personales</h3>
+                    <div class="form-grid">
+                        <!-- Nombre -->
+                        <div class="form-group">
+                            <label for="nombre">
+                                <i class="fas fa-user"></i> Nombre(s) *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="nombre" 
+                                name="nombre" 
+                                placeholder="Ej: Juan Carlos"
+                                required
+                            >
+                        </div>
+
+                        <!-- Apellido Paterno -->
+                        <div class="form-group">
+                            <label for="apellido_paterno">
+                                <i class="fas fa-user"></i> Apellido Paterno *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="apellido_paterno" 
+                                name="apellido_paterno" 
+                                placeholder="Ej: Pérez"
+                                required
+                            >
+                        </div>
+
+                        <!-- Apellido Materno -->
+                        <div class="form-group">
+                            <label for="apellido_materno">
+                                <i class="fas fa-user"></i> Apellido Materno
+                            </label>
+                            <input 
+                                type="text" 
+                                id="apellido_materno" 
+                                name="apellido_materno" 
+                                placeholder="Ej: García"
+                            >
+                            <small class="form-hint">Opcional</small>
+                        </div>
+
+                        <!-- Fecha de Nacimiento -->
+                        <div class="form-group">
+                            <label for="fecha_nacimiento">
+                                <i class="fas fa-calendar-alt"></i> Fecha de Nacimiento *
+                            </label>
+                            <input 
+                                type="date" 
+                                id="fecha_nacimiento" 
+                                name="fecha_nacimiento"
+                                max="2006-01-01"
+                                required
+                            >
+                        </div>
+
+                        <!-- Edad (automática) -->
+                        <div class="form-group">
+                            <label for="edad">
+                                <i class="fas fa-birthday-cake"></i> Edad
+                            </label>
+                            <input 
+                                type="number" 
+                                id="edad" 
+                                name="edad" 
+                                readonly
+                                placeholder="Se calcula automáticamente"
+                                style="background: var(--light-gray);"
+                            >
+                            <small class="form-hint">Se calcula automáticamente</small>
+                        </div>
+
+                        <!-- Teléfono Personal -->
+                        <div class="form-group">
+                            <label for="telefono">
+                                <i class="fas fa-phone"></i> Teléfono Personal *
+                            </label>
+                            <input 
+                                type="tel" 
+                                id="telefono" 
+                                name="telefono" 
+                                placeholder="Ej: 5512345678"
+                                required
+                                pattern="[0-9]{10}"
+                                maxlength="10"
+                                title="10 dígitos sin espacios"
+                            >
+                            <small class="form-hint">10 dígitos sin espacios</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Contacto de Emergencia -->
+                <div class="form-section">
+                    <h3><i class="fas fa-phone-alt"></i> Contacto de Emergencia</h3>
+                    <div class="emergencia-group">
+                        <div class="form-row">
+                            <!-- Teléfono de Emergencia -->
+                            <div class="form-group">
+                                <label for="emergencia_telefono">
+                                    <i class="fas fa-phone"></i> Teléfono de Emergencia *
+                                </label>
+                                <input 
+                                    type="tel" 
+                                    id="emergencia_telefono" 
+                                    name="emergencia_telefono" 
+                                    placeholder="Ej: 5512345678"
+                                    required
+                                    pattern="[0-9]{10}"
+                                    maxlength="10"
+                                >
+                            </div>
+
+                            <!-- Parentesco -->
+                            <div class="form-group">
+                                <label for="emergencia_parentesco">
+                                    <i class="fas fa-users"></i> Parentesco *
+                                </label>
+                                <select id="emergencia_parentesco" name="emergencia_parentesco" required>
+                                    <option value="">Seleccionar</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Pareja">Pareja</option>
+                                    <option value="Hijo">Hijo</option>
+                                    <option value="Hija">Hija</option>
+                                    <option value="Hermano">Hermano</option>
+                                    <option value="Hermana">Hermana</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Especificar otro parentesco -->
+                        <div class="form-group" id="otroParentescoContainer" style="display: none;">
+                            <label for="emergencia_otro_parentesco">
+                                <i class="fas fa-edit"></i> Especificar Parentesco
+                            </label>
+                            <input 
+                                type="text" 
+                                id="emergencia_otro_parentesco" 
+                                name="emergencia_otro_parentesco" 
+                                placeholder="Ej: Tío, Abuelo, etc."
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Información Laboral -->
+                <div class="form-section">
+                    <h3><i class="fas fa-briefcase"></i> Información Laboral</h3>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="puesto">
+                                <i class="fas fa-user-tag"></i> Puesto de Trabajo *
+                            </label>
+                            <select id="puesto" name="puesto" required>
+                                <option value="">Selecciona un puesto</option>
+                                <option value="Cajer@">Cajer@</option>
+                                <option value="Almacenista">Almacenista</option>
+                                <option value="Chofer">Chofer</option>
+                                <option value="Gerente">Gerente</option>
+                                <option value="Encargado de tienda">Encargado de tienda</option>
+                                <option value="Cocina">Cocina</option>
+                                <option value="Empleado de Cremería">Empleado de Cremería</option>
+                                <option value="Empleado de Tienda">Empleado de Tienda</option>
+                                <option value="Auxiliar de Limpieza">Auxiliar de Limpieza</option>
+                                <option value="Seguridad">Seguridad</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width" id="otroPuestoContainer" style="display: none;">
+                            <label for="otro_puesto">
+                                <i class="fas fa-edit"></i> Especificar Otro Puesto
+                            </label>
+                            <input 
+                                type="text" 
+                                id="otro_puesto" 
+                                name="otro_puesto" 
+                                placeholder="Describe el puesto"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Código QR -->
+                <div class="form-section">
+                    <h3><i class="fas fa-qrcode"></i> Código QR</h3>
+                    <div class="qr-section">
+                        <div class="qr-preview" id="qrPreview">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Se generará automáticamente</span>
+                        </div>
+                        <div class="qr-info">
+                            <p><i class="fas fa-info-circle"></i> Cada empleado tendrá un código QR único para registrar su asistencia.</p>
+                            <p><i class="fas fa-print"></i> Podrás imprimirlo desde la lista de empleados.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelBtn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <i class="fas fa-save"></i> Guardar Empleado
+                    </button>
+                </div>
+
+                <div class="form-note">
+                    <p><i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Importante:</strong> Los campos marcados con * son obligatorios.</p>
+                </div>
+            </form>
+        </div>
+
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-store"></i>
+                    <span>Mini Abarrotes COLT'S</span>
+                </div>
+                <div class="footer-copyright">
+                    <p><i class="fas fa-copyright"></i> 2026 Sistema de Control de Asistencia</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <div id="notifications"></div>
+
+    <!-- Scripts -->
+    <script src="../js/common.js"></script>
+    <script src="../js/empleados.js"></script>
+</body>
+</html>

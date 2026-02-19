@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil de Empleado - Mini Abarrotes COLT'S</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/calendar.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <nav class="sidebar">...</nav>
+    
+    <main class="main-content">
+        <div class="perfil-container">
+            <!-- Info del empleado -->
+            <div class="perfil-header">
+                <div class="perfil-foto" id="fotoEmpleado"></div>
+                <div class="perfil-info">
+                    <h2 id="nombreEmpleado">-</h2>
+                    <p id="puestoEmpleado">-</p>
+                    <p><i class="fas fa-phone"></i> <span id="telefonoEmpleado">-</span></p>
+                    <p><i class="fas fa-birthday-cake"></i> <span id="edadEmpleado">-</span></p>
+                </div>
+                <div class="perfil-qr" id="qrEmpleado"></div>
+            </div>
+
+            <!-- Selector de mes -->
+            <div class="calendar-header">
+                <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                <h3 id="currentMonthYear">Febrero 2026</h3>
+                <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Calendario de asistencia -->
+            <div class="calendar-grid" id="calendarGrid"></div>
+            
+            <!-- Leyenda -->
+            <div class="calendar-legend">
+                <span><span class="legend trabajado"></span> Trabajó</span>
+                <span><span class="legend faltado"></span> No trabajó</span>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="estadisticas">
+                <div class="stat-box">
+                    <h4>Días trabajados</h4>
+                    <p id="diasTrabajados">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Días faltados</h4>
+                    <p id="diasFaltados">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Total horas</h4>
+                    <p id="totalHoras">0</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/perfil-empleado.js"></script>
+</body>
+</html>

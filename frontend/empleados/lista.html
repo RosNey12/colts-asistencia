@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Empleados - Mini Abarrotes COLT'S</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/tables.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SUPABASE JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code Library - DEBE IR ANTES DE NUESTROS SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Administrador</h3>
+                <p id="userEmail">colts</p>
+                <span class="user-status online">
+                    <i class="fas fa-circle"></i> En línea
+                </span>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="../dashboard.html">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">EMPLEADOS</span>
+            </li>
+            <li class="menu-item">
+                <a href="registro.html">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Agregar Empleado</span>
+                </a>
+            </li>
+            <li class="menu-item active">
+                <a href="lista.html">
+                    <i class="fas fa-users"></i>
+                    <span>Lista de Empleados</span>
+                    <span class="badge" id="empleadosCount">0</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">ASISTENCIA</span>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/entrada.html">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Registrar Entrada</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="../asistencia/salida.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Registrar Salida</span>
+                </a>
+            </li>
+            
+            <li class="menu-section">
+                <span class="section-title">SISTEMA</span>
+            </li>
+            <li class="menu-item">
+                <a href="#" id="backToDashboard">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Volver al Inicio</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Logout -->
+        <div class="logout-section">
+            <a href="#" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Lista de Empleados</h1>
+                <div class="breadcrumb">
+                    <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Empleados</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-time" id="dateTime">
+                    <span id="currentDate">Cargando...</span>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Actualizar lista">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Actions -->
+        <div class="page-actions">
+            <div class="action-buttons">
+                <a href="registro.html" class="btn-primary">
+                    <i class="fas fa-user-plus"></i> Nuevo Empleado
+                </a>
+                <button class="btn-secondary" id="exportBtn">
+                    <i class="fas fa-file-export"></i> Exportar Lista
+                </button>
+                <button class="btn-text" id="printBtn">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+            
+            <div class="search-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar empleado...">
+                    <button class="clear-search" id="clearSearch" title="Limpiar búsqueda">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <select id="filterStatus" class="filter-select">
+                    <option value="all">Todos los empleados</option>
+                    <option value="active">Solo activos</option>
+                    <option value="inactive">Solo inactivos</option>
+                </select>
+                
+                <select id="filterPuesto" class="filter-select">
+                    <option value="all">Todos los puestos</option>
+                    <option value="Cajero">Cajeros</option>
+                    <option value="Almacenista">Almacenistas</option>
+                    <option value="Reponedor">Reponedores</option>
+                    <option value="Gerente">Gerentes</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-cards">
+            <div class="stat-card mini">
+                <div class="stat-icon primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Total</h3>
+                    <p class="stat-number" id="totalEmpleados">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon success">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Activos</h3>
+                    <p class="stat-number" id="activosCount">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon warning">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Presentes Hoy</h3>
+                    <p class="stat-number" id="presentesHoy">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card mini">
+                <div class="stat-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Con QR</h3>
+                    <p class="stat-number" id="conQRCount">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employees Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3><i class="fas fa-list"></i> Registro de Empleados</h3>
+                <div class="table-info">
+                    <span id="tableInfo">Mostrando 0 empleados</span>
+                    <div class="table-actions">
+                        <button class="btn-icon" id="selectAllBtn" title="Seleccionar todos">
+                            <i class="far fa-square"></i>
+                        </button>
+                        <button class="btn-icon" id="deselectAllBtn" title="Deseleccionar todos">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="data-table" id="empleadosTable">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" id="selectAllCheckbox">
+                            </th>
+                            <th width="80">Foto</th>
+                            <th>Nombre Completo</th>
+                            <th>Puesto</th>
+                            <th>Teléfono</th>
+                            <th>QR</th>
+                            <th>Estado</th>
+                            <th>Registro</th>
+                            <th width="150">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empleadosTableBody">
+                        <!-- Datos se cargan dinámicamente -->
+                        <tr class="loading-row">
+                            <td colspan="9">
+                                <div class="loading-content">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Cargando lista de empleados...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-footer">
+                <div class="pagination-info">
+                    <span id="paginationInfo">Página 1 de 1</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="btn-pagination" id="firstPage" disabled>
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="btn-pagination" id="prevPage" disabled>
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                    <span class="page-numbers" id="pageNumbers">1</span>
+                    <button class="btn-pagination" id="nextPage" disabled>
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                    <button class="btn-pagination" id="lastPage" disabled>
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+                <div class="table-summary">
+                    <span id="selectedCount">0 seleccionados</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions" id="bulkActions">
+            <div class="bulk-info">
+                <span id="bulkSelectedCount">0 empleados seleccionados</span>
+            </div>
+            <div class="bulk-buttons">
+                <button class="btn-bulk" id="activateSelected" title="Activar seleccionados">
+                    <i class="fas fa-check-circle"></i> Activar
+                </button>
+                <button class="btn-bulk" id="deactivateSelected" title="Desactivar seleccionados">
+                    <i class="fas fa-times-circle"></i> Desactivar
+                </button>
+                <button class="btn-bulk danger" id="deleteSelected" title="Eliminar seleccionados">
+                    <i class="fas fa-trash-alt"></i> Eliminar
+                </button>
+                <button class="btn-bulk" id="exportSelected">
+                    <i class="fas fa-file-export"></i> Exportar
+                </button>
+                <button class="btn-bulk" id="clearSelection">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">
+                <i class="fas fa-users-slash"></i>
+            </div>
+            <h3>No hay empleados registrados</h3>
+            <p>Comienza agregando tu primer empleado al sistema.</p>
+            <a href="registro.html" class="btn-primary">
+                <i class="fas fa-user-plus"></i> Agregar Primer Empleado
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-store"></i>
+                    <span>Mini Abarrotes COLTS</span>
+                </div>
+                <div class="footer-copyright">
+                    <p><i class="fas fa-copyright"></i> 2026 Sistema de Control de Asistencia</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Notifications Container -->
+    <div id="notifications"></div>
+
+    <!-- Modal para ver detalles -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-user"></i> Detalles del Empleado</h3>
+                <button class="modal-close" id="closeDetailModal">&times;</button>
+            </div>
+            <div class="modal-body" id="detailModalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar eliminación -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h3>
+                <button class="modal-close" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage">¿Estás seguro de que deseas eliminar este empleado?</p>
+                <p class="warning-text"><i class="fas fa-exclamation-circle"></i> Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelDelete">Cancelar</button>
+                <button class="btn-danger" id="confirmDelete">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts - ORDEN CORRECTO -->
+    <!-- 1. Librerías externas -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. Nuestros scripts -->
+    <script src="../js/common.js"></script>
+    <script src="../js/lista-empleados.js"></script>
+</body>
+</html>

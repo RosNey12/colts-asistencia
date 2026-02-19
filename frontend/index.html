@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mini Abarrotes COLT'S</title>
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SUPABASE JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Logo Header -->
+        <div class="logo-header">
+            <div class="logo-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <h1 class="logo-text">
+                <span class="logo-main">MINI ABARROTES</span>
+                <span class="logo-brand">COLT`S</span>
+            </h1>
+            <p class="logo-subtitle">Control de Asistencia</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-form-container">
+            <div class="form-header">
+                <h2><i class="fas fa-user-shield"></i> Acceso Administrativo</h2>
+                <p>Ingresa tus credenciales para continuar</p>
+            </div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="input-group">
+                    <label for="usuario">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <input 
+                        type="text" 
+                        id="usuario" 
+                        name="usuario" 
+                        placeholder="Ingresa tu usuario" 
+                        required
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="input-group">
+                    <label for="contraseña">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="contraseña" 
+                            name="contraseña" 
+                            placeholder="Ingresa tu contraseña" 
+                            required
+                            autocomplete="new-password"
+                        >
+                        <button type="button" class="toggle-password" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="remember-group">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Recordar mi sesión</label>
+                </div>
+
+                <button type="submit" class="login-button">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p><i class="fas fa-copyright"></i> 2026 Mini Abarrotes COLT'S</p>
+                <p class="version">v1.0.0</p>
+            </div>
+        </div>
+
+        <!-- Notifications Container -->
+        <div id="notifications"></div>
+    </div>
+    
+    <script src="js/auth.js"></script>
+</body>
+</html>
