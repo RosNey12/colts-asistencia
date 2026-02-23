@@ -14,6 +14,76 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <!-- SUPABASE JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Estilos para el botón de inicio */
+        .btn-back-home {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--light-gray);
+            color: var(--primary-blue);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition-fast);
+            border: 1px solid var(--medium-gray);
+            margin-right: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn-back-home:hover {
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-back-home i {
+            font-size: 1rem;
+        }
+
+        .btn-back-home .hide-on-mobile {
+            display: inline;
+        }
+
+        @media (max-width: 768px) {
+            .btn-back-home {
+                padding: 0.5rem;
+            }
+            .btn-back-home .hide-on-mobile {
+                display: none;
+            }
+            .top-header h1 {
+                font-size: 1rem;
+                max-width: 120px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .breadcrumb {
+                display: none;
+            }
+            .date-time {
+                display: none;
+            }
+            .header-right .refresh-btn {
+                padding: 0.4rem;
+            }
+        }
+
+        /* Estilos para las horas trabajadas en el modal */
+        .result-hours {
+            font-size: 1.1rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background: var(--light-gray);
+            border-radius: var(--radius-sm);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar Navigation -->
@@ -110,12 +180,19 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Top Header -->
+        <!-- Top Header - CORREGIDO con botón de inicio -->
         <header class="top-header">
             <div class="header-left">
                 <button class="menu-toggle" id="menuToggle">
                     <i class="fas fa-bars"></i>
                 </button>
+                
+                <!-- ✅ BOTÓN VOLVER AL INICIO AGREGADO -->
+                <a href="../dashboard.html" class="btn-back-home" title="Volver al Inicio">
+                    <i class="fas fa-home"></i>
+                    <span class="hide-on-mobile">Inicio</span>
+                </a>
+                
                 <h1>Registrar Salida</h1>
                 <div class="breadcrumb">
                     <a href="../dashboard.html"><i class="fas fa-home"></i> Inicio</a>
@@ -382,7 +459,7 @@
                 <p class="result-time">
                     Salida: <span id="resultSalida">--:--</span>
                 </p>
-                <p class="result-hours">
+                <p class="result-hours" id="resultHoursText">
                     Horas trabajadas: <strong id="resultHours">0.00</strong>
                 </p>
                 <p class="result-message" id="resultMessage">Salida registrada exitosamente</p>

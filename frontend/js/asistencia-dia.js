@@ -206,41 +206,77 @@ async function loadTodayAttendance() {
 }
 
 // ===== RENDERIZAR TABLA =====
+// ===== RENDERIZAR TABLA DE ASISTENCIA =====
 function renderAttendanceTable(empleados, asistenciaMap) {
-    if (empleados.length === 0) {
-        document.getElementById('attendanceBody').innerHTML = `
-            <tr><td colspan="6" class="loading">
-                <i class="fas fa-users-slash"></i>
-                <div>No hay empleados registrados</div>
-            </td></tr>`;
-        return;
-    }
-
     let html = '';
+    let presentes = 0;
+    let pendientes = 0;
+    let ausentes = 0;
+    
     empleados.forEach(emp => {
         const registro = asistenciaMap[emp.id];
         const tieneEntrada = registro?.hora_entrada;
         const tieneSalida = registro?.hora_salida;
-
-        const estado = !tieneEntrada ? 'ausente' : !tieneSalida ? 'pendiente' : 'completo';
-        const entradaTime = tieneEntrada ? formatTime(registro.hora_entrada) : '--:--';
-        const salidaTime = tieneSalida ? formatTime(registro.hora_salida) : '--:--';
-
+        
+        if (tieneEntrada) presentes++;
+        if (tieneEntrada && !tieneSalida) pendientes++;
+        if (!tieneEntrada) ausentes++;
+        
+        const estado = !tieneEntrada ? 'ausente' : 
+                      !tieneSalida ? 'pendiente' : 'completo';
+        
+        const entradaTime = registro?.hora_entrada ? 
+            formatTime(registro.hora_entrada) : '--:--';
+        const salidaTime = registro?.hora_salida ? 
+            formatTime(registro.hora_salida) : '--:--';
+        
+        // ✅ NUEVO: Formatear horas trabajadas en formato legible
+        let horasTrabajadasTexto = '0 minutos';
+        if (registro?.horas_trabajadas) {
+            const horasDecimal = registro.horas_trabajadas;
+            const horas = Math.floor(horasDecimal);
+            const minutos = Math.round((horasDecimal - horas) * 60);
+            
+            if (horas === 0 && minutos === 0) {
+                horasTrabajadasTexto = '0 minutos';
+            } else if (horas === 0) {
+                horasTrabajadasTexto = `${minutos} minutos`;
+            } else if (minutos === 0) {
+                horasTrabajadasTexto = `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+            } else {
+                horasTrabajadasTexto = `${horas} ${horas === 1 ? 'hora' : 'horas'} ${minutos} minutos`;
+            }
+        }
+        
         html += `
             <tr class="estado-${estado}">
                 <td><strong>${emp.nombre_completo}</strong></td>
                 <td>${emp.puesto || 'Sin puesto'}</td>
                 <td>${entradaTime}</td>
                 <td>${salidaTime}</td>
-                <td>${registro?.horas_trabajadas ? parseFloat(registro.horas_trabajadas).toFixed(2) : '0.00'}</td>
+                <td>${horasTrabajadasTexto}</td>
                 <td>
                     <span class="badge-${estado}">
-                        ${estado === 'completo' ? '✅ Completo' : estado === 'pendiente' ? '⏳ Pendiente' : '❌ Ausente'}
+                        ${estado === 'completo' ? '✅ Completo' : 
+                          estado === 'pendiente' ? '⏳ Pendiente' : '❌ Ausente'}
                     </span>
                 </td>
-            </tr>`;
+            </tr>
+        `;
     });
-
+    
+    // Si no hay empleados
+    if (empleados.length === 0) {
+        html = `
+            <tr>
+                <td colspan="6" class="loading">
+                    <i class="fas fa-users-slash"></i>
+                    <div>No hay empleados registrados</div>
+                </td>
+            </tr>
+        `;
+    }
+    
     document.getElementById('attendanceBody').innerHTML = html;
 }
 
