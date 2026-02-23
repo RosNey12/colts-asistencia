@@ -169,13 +169,16 @@ async function loadEmpleados() {
 }
 
 // ===== CONFIGURAR FECHAS POR DEFECTO =====
+// CORRECCIÓN: toISOString() usa UTC y puede dar el día anterior en México (UTC-6)
+// Se usa toLocaleDateString con 'en-CA' para obtener YYYY-MM-DD en hora local
 function setDefaultDates() {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toLocaleDateString('en-CA'); // formato YYYY-MM-DD en zona local
+
     document.getElementById('fecha').value = today;
     
-    const firstDay = new Date();
-    firstDay.setDate(1);
-    document.getElementById('fechaInicio').value = firstDay.toISOString().split('T')[0];
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    document.getElementById('fechaInicio').value = firstDay.toLocaleDateString('en-CA');
     document.getElementById('fechaFin').value = today;
 }
 
@@ -235,27 +238,25 @@ function setupEvents() {
         });
     }
     
-    // Logout - CORREGIDO
+    // ===== LOGOUT - CORREGIDO =====
+    // ANTES: se hacía replaceWith/cloneNode y luego se buscaba el nuevo elemento,
+    // lo que causaba que el listener nunca se adjuntara correctamente si el DOM
+    // no había terminado de actualizarse.
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        // IMPORTANTE: Remover eventos anteriores para evitar duplicados
-        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
-        const newLogoutBtn = document.getElementById('logoutBtn');
-        
-        newLogoutBtn.addEventListener('click', (e) => {
+        logoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('🚪 Cerrando sesión desde reportes');
             
-            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-                // Limpiar todo
-                localStorage.removeItem('colts_session');
-                localStorage.removeItem('colts_token');
-                sessionStorage.removeItem('colts_session');
-                sessionStorage.removeItem('colts_token');
-                
-                // Redirigir al login
-                window.location.href = '../index.html';
+            // window.confirm garantiza contexto global, evita bloqueos en async
+            const confirmar = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
+            if (confirmar) {
+                // Limpiar todo el storage de una vez
+                localStorage.clear();
+                sessionStorage.clear();
+                // replace() evita que el usuario regrese con el botón "atrás"
+                window.location.replace('../index.html');
             }
         });
     }
@@ -290,8 +291,20 @@ function formatHorasTrabajadas(horasDecimal) {
 }
 
 // ===== GENERAR REPORTE =====
+// CORRECCIÓN: Se agregó bloqueo del botón durante la carga con try/finally
+// para garantizar que el botón siempre se restaure, incluso si hay un error.
+// Sin esto, un fallo de Supabase dejaba la UI "colgada" bloqueando otros eventos.
 async function generarReporte() {
     console.log('🔍 Generando reporte...');
+    
+    const btn = document.getElementById('generarReporte');
+    const originalBtnHTML = btn ? btn.innerHTML : '';
+    
+    // Bloquear botón mientras carga
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+    }
     
     const tipo = document.getElementById('tipoReporte').value;
     const empleadoId = document.getElementById('empleadoFiltro').value;
@@ -316,15 +329,15 @@ async function generarReporte() {
             const inicio = new Date(hoy);
             inicio.setDate(hoy.getDate() - 7);
             query = query
-                .gte('fecha', inicio.toISOString().split('T')[0])
-                .lte('fecha', hoy.toISOString().split('T')[0]);
+                .gte('fecha', inicio.toLocaleDateString('en-CA'))
+                .lte('fecha', hoy.toLocaleDateString('en-CA'));
             
         } else if (tipo === 'mes') {
             const hoy = new Date();
             const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
             query = query
-                .gte('fecha', inicio.toISOString().split('T')[0])
-                .lte('fecha', hoy.toISOString().split('T')[0]);
+                .gte('fecha', inicio.toLocaleDateString('en-CA'))
+                .lte('fecha', hoy.toLocaleDateString('en-CA'));
             
         } else if (tipo === 'rango') {
             const inicio = document.getElementById('fechaInicio').value;
@@ -366,6 +379,13 @@ async function generarReporte() {
     } catch (error) {
         console.error('Error generando reporte:', error);
         showNotification('Error al generar el reporte', 'error');
+        
+    } finally {
+        // SIEMPRE restaurar el botón, sin importar si hubo error o no
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+        }
     }
 }
 
@@ -487,7 +507,7 @@ function exportarExcel() {
         XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
         
         // Descargar archivo
-        const fecha = new Date().toISOString().split('T')[0];
+        const fecha = new Date().toLocaleDateString('en-CA');
         XLSX.writeFile(wb, `reporte_colts_${fecha}.xlsx`);
         
         showNotification('Excel generado exitosamente', 'success');
@@ -578,4 +598,4 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-console.log('✅ reportes.js cargado completamente - Con logout corregido');
+console.log('✅ reportes.js cargado completamente - Bugs de logout, async y fechas corregidos');
