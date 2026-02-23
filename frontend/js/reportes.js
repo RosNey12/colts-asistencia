@@ -1,94 +1,51 @@
 // ===== REPORTES - Mini Abarrotes COLT'S =====
 console.log('📊 Módulo de Reportes inicializando...');
 
+// ===== CONFIGURACIÓN =====
 let supabaseClient = null;
 let currentData = [];
 
+// ===== INICIALIZACIÓN PRINCIPAL =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Inicializando reportes...');
     
-    if (typeof protectPage === 'function' && !protectPage()) return;
+    // 1. Verificar autenticación
+    if (typeof protectPage === 'function' && !protectPage()) {
+        console.log('⛔ Página protegida - redirigiendo');
+        return;
+    }
     
+    console.log('✅ Usuario autenticado');
+    
+    // 2. Inicializar Supabase
     await initSupabase();
+    
+    // 3. Inicializar fecha/hora
     updateDateTime();
     startDateTimeUpdates();
+    
+    // 4. Cargar datos del usuario
     loadUserData();
+    
+    // 5. Cargar empleados para el filtro
     await loadEmpleados();
+    
+    // 6. Configurar fecha por defecto (hoy)
     setDefaultDates();
+    
+    // 7. Configurar eventos
     setupEvents();
-
-    // ✅ MENÚ HAMBURGUESA — igual que en estadisticas y lista-empleados
-    if (typeof setupMobileMenu === 'function') {
-        setupMobileMenu();
-    } else {
-        initMobileMenuFallback();
-    }
-
+    
+    // 8. Inicializar menú móvil
+    setTimeout(function() {
+        if (typeof window.setupMobileMenu === 'function') {
+            window.setupMobileMenu();
+        }
+    }, 200);
+    
     console.log('✅ Reportes listo');
 });
 
-// ===== FALLBACK MENÚ HAMBURGUESA =====
-function initMobileMenuFallback() {
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.querySelector('.sidebar');
-    if (!menuToggle || !sidebar) return;
-
-    let overlay = document.querySelector('.sidebar-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'sidebar-overlay';
-        overlay.style.cssText = `
-            display:none; position:fixed; top:0; left:0;
-            width:100%; height:100%; background:rgba(0,0,0,0.5);
-            z-index:999; opacity:0; transition:opacity 0.3s ease;
-        `;
-        document.body.appendChild(overlay);
-    }
-
-    function openMenu() {
-        sidebar.classList.add('mobile-active');
-        overlay.style.display = 'block';
-        setTimeout(() => { overlay.style.opacity = '1'; }, 10);
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeMenu() {
-        sidebar.classList.remove('mobile-active');
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
-        document.body.style.overflow = '';
-    }
-
-    const newToggle = menuToggle.cloneNode(true);
-    menuToggle.parentNode.replaceChild(newToggle, menuToggle);
-
-    newToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        sidebar.classList.contains('mobile-active') ? closeMenu() : openMenu();
-    });
-
-    overlay.addEventListener('click', closeMenu);
-
-    sidebar.querySelectorAll('.sidebar-menu a, .logout-btn').forEach(link => {
-        link.addEventListener('click', () => {
-            if (overlay.style.display === 'block') closeMenu();
-        });
-    });
-
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 992) {
-            sidebar.classList.remove('mobile-active');
-            overlay.style.opacity = '0';
-            overlay.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-    });
-
-    console.log('✅ Menú hamburguesa (fallback) listo en reportes');
-}
-
-// ===== INICIALIZAR SUPABASE =====
 // ===== INICIALIZAR SUPABASE =====
 async function initSupabase() {
     try {
@@ -160,7 +117,8 @@ function updateDateTime() {
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
-            day: 'numeric' 
+            day: 'numeric',
+            timeZone: 'America/Mexico_City'
         };
         const dateStr = now.toLocaleDateString('es-MX', optionsDate);
         
@@ -168,7 +126,8 @@ function updateDateTime() {
             hour: '2-digit', 
             minute: '2-digit', 
             second: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'America/Mexico_City'
         });
         
         const currentDateElem = document.getElementById('currentDate');
@@ -234,12 +193,26 @@ function setupEvents() {
     }
     
     // Tipo de reporte
-    document.getElementById('tipoReporte').addEventListener('change', toggleDateInputs);
+    const tipoReporte = document.getElementById('tipoReporte');
+    if (tipoReporte) {
+        tipoReporte.addEventListener('change', toggleDateInputs);
+    }
     
     // Botones
-    document.getElementById('generarReporte').addEventListener('click', generarReporte);
-    document.getElementById('exportarExcel').addEventListener('click', exportarExcel);
-    document.getElementById('limpiarFiltros').addEventListener('click', limpiarFiltros);
+    const generarBtn = document.getElementById('generarReporte');
+    if (generarBtn) {
+        generarBtn.addEventListener('click', generarReporte);
+    }
+    
+    const exportarBtn = document.getElementById('exportarExcel');
+    if (exportarBtn) {
+        exportarBtn.addEventListener('click', exportarExcel);
+    }
+    
+    const limpiarBtn = document.getElementById('limpiarFiltros');
+    if (limpiarBtn) {
+        limpiarBtn.addEventListener('click', limpiarFiltros);
+    }
     
     // Refresh
     const refreshBtn = document.getElementById('refreshBtn');
@@ -262,21 +235,27 @@ function setupEvents() {
         });
     }
     
-    // Logout
+    // Logout - CORREGIDO
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
+        // IMPORTANTE: Remover eventos anteriores para evitar duplicados
+        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+        const newLogoutBtn = document.getElementById('logoutBtn');
+        
+        newLogoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('🚪 Cerrando sesión desde reportes');
+            
             if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-                if (typeof logout === 'function') {
-                    logout();
-                } else {
-                    localStorage.removeItem('colts_session');
-                    localStorage.removeItem('colts_token');
-                    sessionStorage.removeItem('colts_session');
-                    sessionStorage.removeItem('colts_token');
-                    window.location.href = '../index.html';
-                }
+                // Limpiar todo
+                localStorage.removeItem('colts_session');
+                localStorage.removeItem('colts_token');
+                sessionStorage.removeItem('colts_session');
+                sessionStorage.removeItem('colts_token');
+                
+                // Redirigir al login
+                window.location.href = '../index.html';
             }
         });
     }
@@ -285,11 +264,14 @@ function setupEvents() {
 // ===== MOSTRAR/OCULTAR INPUTS DE FECHA =====
 function toggleDateInputs() {
     const tipo = document.getElementById('tipoReporte').value;
-    document.getElementById('fechaGroup').style.display = tipo === 'dia' ? 'block' : 'none';
-    document.getElementById('rangoGroup').style.display = tipo === 'rango' ? 'block' : 'none';
+    const fechaGroup = document.getElementById('fechaGroup');
+    const rangoGroup = document.getElementById('rangoGroup');
+    
+    if (fechaGroup) fechaGroup.style.display = tipo === 'dia' ? 'block' : 'none';
+    if (rangoGroup) rangoGroup.style.display = tipo === 'rango' ? 'block' : 'none';
 }
 
-// ===== FUNCIÓN PARA FORMATEAR HORAS TRABAJADAS (IGUAL QUE EN ASISTENCIA DÍA) =====
+// ===== FUNCIÓN PARA FORMATEAR HORAS TRABAJADAS =====
 function formatHorasTrabajadas(horasDecimal) {
     if (!horasDecimal || horasDecimal === 0) return '0 minutos';
     
@@ -387,7 +369,7 @@ async function generarReporte() {
     }
 }
 
-// ===== RENDERIZAR TABLA (CON FORMATO DE HORAS MEJORADO) =====
+// ===== RENDERIZAR TABLA =====
 function renderTabla() {
     let html = '';
     let totalHoras = 0;
@@ -402,13 +384,14 @@ function renderTabla() {
             </tr>
         `;
         
-        document.getElementById('resumenTotales').style.display = 'none';
+        const resumenTotales = document.getElementById('resumenTotales');
+        if (resumenTotales) resumenTotales.style.display = 'none';
         
     } else {
         currentData.forEach(reg => {
             totalHoras += parseFloat(reg.horas_trabajadas) || 0;
             
-            // ✅ NUEVO: Formatear horas trabajadas en formato legible
+            // Formatear horas trabajadas
             const horasFormateadas = formatHorasTrabajadas(reg.horas_trabajadas);
             
             html += `
@@ -423,19 +406,26 @@ function renderTabla() {
             `;
         });
         
-        // Actualizar resumen (mantener total en horas decimal para cálculos)
-        document.getElementById('totalRegistros').textContent = `${currentData.length} registros`;
-        document.getElementById('totalRegistrosNum').textContent = currentData.length;
-        document.getElementById('totalHoras').textContent = totalHoras.toFixed(2);
+        // Actualizar resumen
+        const totalRegistros = document.getElementById('totalRegistros');
+        const totalRegistrosNum = document.getElementById('totalRegistrosNum');
+        const totalHorasElem = document.getElementById('totalHoras');
+        const totalDiasElem = document.getElementById('totalDias');
+        const resumenTotales = document.getElementById('resumenTotales');
         
-        // Calcular días únicos en el período
+        if (totalRegistros) totalRegistros.textContent = `${currentData.length} registros`;
+        if (totalRegistrosNum) totalRegistrosNum.textContent = currentData.length;
+        if (totalHorasElem) totalHorasElem.textContent = totalHoras.toFixed(2);
+        
+        // Calcular días únicos
         const diasUnicos = new Set(currentData.map(r => r.fecha)).size;
-        document.getElementById('totalDias').textContent = diasUnicos;
+        if (totalDiasElem) totalDiasElem.textContent = diasUnicos;
         
-        document.getElementById('resumenTotales').style.display = 'grid';
+        if (resumenTotales) resumenTotales.style.display = 'grid';
     }
     
-    document.getElementById('reporteBody').innerHTML = html;
+    const reporteBody = document.getElementById('reporteBody');
+    if (reporteBody) reporteBody.innerHTML = html;
 }
 
 // ===== FORMATEAR HORA =====
@@ -461,16 +451,21 @@ function exportarExcel() {
     }
     
     try {
+        // Verificar que XLSX esté disponible
+        if (typeof XLSX === 'undefined') {
+            showNotification('Librería de Excel no disponible', 'error');
+            return;
+        }
+        
         // Crear datos para Excel
         const excelData = [
-            ['Fecha', 'Empleado', 'Puesto', 'Entrada', 'Salida', 'Horas Trabajadas'],
+            ['Fecha', 'Empleado', 'Puesto', 'Entrada', 'Salida', 'Horas Trabajadas (decimal)'],
             ...currentData.map(reg => [
                 new Date(reg.fecha).toLocaleDateString('es-MX'),
                 reg.empleados?.nombre_completo || 'N/A',
                 reg.empleados?.puesto || 'N/A',
                 formatTime(reg.hora_entrada),
                 formatTime(reg.hora_salida),
-                // ✅ En Excel dejamos decimal para facilitar cálculos
                 reg.horas_trabajadas ? reg.horas_trabajadas.toFixed(2) : '0.00'
             ])
         ];
@@ -486,7 +481,7 @@ function exportarExcel() {
             { wch: 20 }, // Puesto
             { wch: 10 }, // Entrada
             { wch: 10 }, // Salida
-            { wch: 15 }  // Horas
+            { wch: 20 }  // Horas
         ];
         
         XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
@@ -505,23 +500,34 @@ function exportarExcel() {
 
 // ===== LIMPIAR FILTROS =====
 function limpiarFiltros() {
-    document.getElementById('tipoReporte').value = 'dia';
+    const tipoReporte = document.getElementById('tipoReporte');
+    if (tipoReporte) tipoReporte.value = 'dia';
+    
     setDefaultDates();
     toggleDateInputs();
-    document.getElementById('empleadoFiltro').value = 'todos';
+    
+    const empleadoFiltro = document.getElementById('empleadoFiltro');
+    if (empleadoFiltro) empleadoFiltro.value = 'todos';
     
     // Limpiar tabla
-    document.getElementById('reporteBody').innerHTML = `
-        <tr>
-            <td colspan="6" class="loading" style="text-align: center; padding: 3rem;">
-                <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
-                <div>Selecciona filtros y genera un reporte</div>
-            </td>
-        </tr>
-    `;
+    const reporteBody = document.getElementById('reporteBody');
+    if (reporteBody) {
+        reporteBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="loading" style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
+                    <div>Selecciona filtros y genera un reporte</div>
+                </td>
+            </tr>
+        `;
+    }
     
-    document.getElementById('resumenTotales').style.display = 'none';
-    document.getElementById('totalRegistros').textContent = '0 registros';
+    const resumenTotales = document.getElementById('resumenTotales');
+    if (resumenTotales) resumenTotales.style.display = 'none';
+    
+    const totalRegistros = document.getElementById('totalRegistros');
+    if (totalRegistros) totalRegistros.textContent = '0 registros';
+    
     currentData = [];
     
     showNotification('Filtros limpiados', 'info');
@@ -557,10 +563,12 @@ function showNotification(message, type = 'info') {
     setTimeout(() => notification.classList.add('show'), 10);
     
     const closeBtn = notification.querySelector('.notification-close');
-    closeBtn.addEventListener('click', () => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    });
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        });
+    }
     
     setTimeout(() => {
         if (notification.parentNode) {
@@ -570,4 +578,4 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-console.log('✅ reportes.js cargado completamente - Con formato de horas mejorado');
+console.log('✅ reportes.js cargado completamente - Con logout corregido');
