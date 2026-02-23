@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupUIEvents();
     setupScannerEvents();
     setupModalEvents();
+    setupMobileMenu();
     
     // INICIAR ACTUALIZACIÓN DE HORA
     updateDateTime();
@@ -1535,6 +1536,7 @@ function loadSettings() {
     }
 }
 
+
 // ===== GUARDAR CONFIGURACIÓN =====
 function saveSettings() {
     try {
@@ -1548,7 +1550,87 @@ function saveSettings() {
         console.error('Error guardando configuración:', error);
     }
 }
+// ===== EJECUTAR AUTO-SALIDA (NUEVO) =====
+async function executeAutoSalida() {
+    console.log('🤖 Ejecutando auto-salida para empleados pendientes...');
+    
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        
+        // Establecer hora de salida a las 10:00 PM
+        const salidaAuto = new Date(now);
+        salidaAuto.setHours(22, 0, 0, 0); // 10:00 PM
+        
+        // Buscar empleados con entrada hoy pero sin salida
+        const { data: pendientes, error } = await supabaseClient
+            .from('asistencia')
+            .select('*, empleados(nombre_completo)')
+            .eq('fecha', today)
+            .is('hora_salida', null)
+            .not('hora_entrada', 'is', null);
+        
+        if (error) {
+            console.error('Error buscando pendientes:', error);
+            return;
+        }
+        
+        if (pendientes && pendientes.length > 0) {
+            console.log(`📋 ${pendientes.length} empleados para auto-salida`);
+            
+            // Registrar salida automática para cada uno
+            for (const registro of pendientes) {
+                // Calcular horas trabajadas hasta las 10:00 PM
+                const entradaTime = new Date(registro.hora_entrada);
+                const horasTrabajadas = ((salidaAuto - entradaTime) / (1000 * 60 * 60)).toFixed(2);
+                
+                await supabaseClient
+                    .from('asistencia')
+                    .update({
+                        hora_salida: salidaAuto.toISOString(),
+                        horas_trabajadas: parseFloat(horasTrabajadas),
+                        auto_salida: true
+                    })
+                    .eq('id', registro.id);
+                
+                console.log(`✅ Auto-salida para: ${registro.empleados?.nombre_completo}`);
+            }
+            
+            showNotification(`Auto-salida registrada para ${pendientes.length} empleados`, 'info');
+            
+            // Actualizar estadísticas si estamos en la página de salida
+            if (scanType === 'salida') {
+                await loadStats();
+            }
+        } else {
+            console.log('✅ No hay empleados pendientes de salida');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en auto-salida:', error);
+    }
+}
 
+// ===== CONFIGURAR VERIFICADOR DE AUTO-SALIDA (NUEVO) =====
+function setupAutoSalidaChecker() {
+    // Solo configurar si estamos en la página de salida
+    if (scanType !== 'salida') return;
+    
+    console.log('⏰ Configurando verificador de auto-salida (10:00 PM)');
+    
+    // Verificar cada minuto
+    setInterval(() => {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        
+        // Solo ejecutar a las 22:00 (10:00 PM) exactas
+        if (hour === 22 && minute === 0) {
+            console.log('🕙 Es la 10:00 PM, ejecutando auto-salida...');
+            executeAutoSalida();
+        }
+    }, 60000); // Cada minuto
+}
 // ===== MOSTRAR NOTIFICACIÓN =====
 function showNotification(message, type = 'info') {
     console.log(`📢 Notificación [${type}]: ${message}`);

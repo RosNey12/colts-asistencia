@@ -1,4 +1,4 @@
-// ===== DASHBOARD MINI ABARROTES COLT'S - VERSIÓN FINAL CON DATOS REALES =====
+// ===== DASHBOARD MINI ABARROTES COLT'S - VERSIÓN CORREGIDA =====
 console.log('📊 Dashboard COLT\'S inicializando...');
 
 // ===== CONFIGURACIÓN =====
@@ -37,70 +37,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // 6. Configurar eventos UI
     setupUIEvents();
-    // ===== CONFIGURAR MENÚ MÓVIL =====
-function setupMobileMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.querySelector('.sidebar');
     
-    // Crear overlay si no existe
-    let overlay = document.querySelector('.sidebar-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'sidebar-overlay';
-        document.body.appendChild(overlay);
-    }
+    // 7. Configurar menú móvil (DESPUÉS de cargar los datos)
+    setupMobileMenu();
     
-    // Abrir menú
-    menuToggle.addEventListener('click', () => {
-        sidebar.classList.add('mobile-active');
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
-    
-    // Cerrar menú al hacer clic en overlay
-    overlay.addEventListener('click', () => {
-        sidebar.classList.remove('mobile-active');
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    });
-    
-    // Cerrar menú al seleccionar una opción
-    const menuLinks = document.querySelectorAll('.sidebar-menu a');
-    menuLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    });
-    
-    // Cerrar menú al hacer clic en logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
-    
-    // Manejar resize de ventana
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 992) {
-            sidebar.classList.remove('mobile-active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
-}
-
-// Llama a esta función dentro de setupUIEvents()
-// Al final de setupUIEvents(), agrega:
-setupMobileMenu();
-    // 7. Configurar eventos de los cards (navegación)
+    // 8. Configurar eventos de los cards (navegación)
     setupCardEvents();
     
-    // 8. Actualizar cada 30 segundos (opcional)
+    // 9. Actualizar cada 30 segundos (opcional)
     setInterval(async () => {
         await loadDashboardStats();
         await loadRecentActivity();
@@ -168,6 +112,79 @@ function updateDateTime() {
 
 function startDateTimeUpdates() {
     setInterval(updateDateTime, 1000);
+}
+
+// ===== CONFIGURAR MENÚ MÓVIL (AHORA FUNCIÓN INDEPENDIENTE) =====
+function setupMobileMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (!menuToggle || !sidebar) {
+        console.warn('⚠️ Elementos del menú móvil no encontrados');
+        return;
+    }
+    
+    // Crear overlay si no existe
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+    }
+    
+    // Abrir menú
+    menuToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('🔧 Toggle menú móvil');
+        
+        // Toggle con pequeño delay para asegurar renderizado
+        setTimeout(() => {
+            sidebar.classList.add('mobile-active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }, 10);
+    });
+    
+    // Cerrar menú al hacer clic en overlay
+    overlay.addEventListener('click', function() {
+        closeMobileMenu(sidebar, overlay);
+    });
+    
+    // Cerrar menú al seleccionar una opción
+    const menuLinks = document.querySelectorAll('.sidebar-menu a');
+    menuLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            closeMobileMenu(sidebar, overlay);
+        });
+    });
+    
+    // Cerrar menú al hacer clic en logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            closeMobileMenu(sidebar, overlay);
+        });
+    }
+    
+    // Manejar resize de ventana
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 992) {
+            closeMobileMenu(sidebar, overlay);
+        }
+    });
+    
+    console.log('✅ Menú móvil configurado correctamente');
+}
+
+// Función helper para cerrar el menú móvil
+function closeMobileMenu(sidebar, overlay) {
+    if (sidebar && overlay) {
+        sidebar.classList.remove('mobile-active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 }
 
 // ===== CONFIGURAR EVENTOS DE CARDS (NAVEGACIÓN) =====
@@ -564,13 +581,17 @@ function loadDailyTip() {
 
 // ===== CONFIGURAR EVENTOS UI =====
 function setupUIEvents() {
-    // Menu toggle
+    // Menu toggle (desktop)
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
     if (menuToggle && sidebar) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-        });
+        // Este es para el comportamiento de escritorio (collapse)
+        // NO debe interferir con el móvil
+        if (window.innerWidth > 992) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
     }
     
     // Refresh manual
@@ -608,8 +629,6 @@ function setupUIEvents() {
         e.preventDefault();
         window.location.href = 'asistencia/dia.html';
     });
-    
-   
     
     // Ayuda
     document.getElementById('helpBtn')?.addEventListener('click', (e) => {
@@ -681,4 +700,4 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-console.log('🔥 dashboard.js cargado correctamente - Cards interactivos');
+console.log('🔥 dashboard.js cargado correctamente - Menú móvil corregido');

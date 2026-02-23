@@ -332,7 +332,7 @@ body {
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     opacity: 0;
-    transition: opacity var(--transition-normal);
+    transition: opacity 0.3s ease;
 }
 
 .sidebar-overlay.active {
@@ -340,6 +340,10 @@ body {
     opacity: 1;
 }
 
+/* Asegurar que el sidebar esté por encima del overlay */
+.sidebar {
+    z-index: 1000;
+}
 /* ===== LOGOUT SECTION ===== */
 .logout-section {
     padding: 1rem;

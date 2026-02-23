@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupUIEvents();
     setupTableEvents();
     setupModalEvents();
+    setupMobileMenu();
     
     // 7. Inicializar fecha/hora
     updateDateTime();
@@ -794,24 +795,35 @@ function printQR(codigoQR, nombre) {
 }
 
 // ===== MOSTRAR DETALLES DEL EMPLEADO (CON EMERGENCIA Y HORA MÉXICO) =====
+// ===== MOSTRAR DETALLES DEL EMPLEADO (CON FECHA CORREGIDA) =====
 function showEmployeeDetails(empleado) {
     console.log('👁️ Mostrando detalles completos:', empleado.id);
     
     const modalBody = document.getElementById('detailModalBody');
     if (!modalBody) return;
     
-    // Formatear fechas con hora México
+    // 🟢 CORREGIDO: Usar formato UTC para fechas
     const fechaNacimiento = empleado.fecha_nacimiento ? 
-        formatMexicoDate(empleado.fecha_nacimiento) : 'No registrada';
+        formatearFechaUTC(empleado.fecha_nacimiento) : 'No registrada';
     
     const fechaRegistro = empleado.created_at ? 
-        formatMexicoDate(empleado.created_at) : 'No registrada';
+        formatearFechaUTC(empleado.created_at) : 'No registrada';
     
     const fechaActualizacion = empleado.updated_at ? 
-        formatMexicoDate(empleado.updated_at) : 'No registrada';
+        formatearFechaUTC(empleado.updated_at) : 'No registrada';
     
     const nombreCompleto = `${empleado.nombre || ''} ${empleado.apellido_paterno || ''} ${empleado.apellido_materno || ''}`.replace(/\s+/g, ' ').trim();
+    function formatearFechaUTC(fechaISO) {
+    if (!fechaISO) return 'No registrada';
     
+    const fecha = new Date(fechaISO);
+    
+    const year = fecha.getUTCFullYear();
+    const month = String(fecha.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getUTCDate()).padStart(2, '0');
+    
+    return `${day}/${month}/${year}`;
+}
     const html = `
         <div style="padding: 1rem;">
             <!-- INFORMACIÓN PERSONAL -->
