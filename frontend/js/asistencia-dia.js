@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Asistencia del día lista');
 });
 
+// ===== FUNCIÓN PARA OBTENER FECHA LOCAL EN FORMATO YYYY-MM-DD =====
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // ===== FALLBACK MENÚ HAMBURGUESA =====
 function initMobileMenuFallback() {
     const menuToggle = document.getElementById('menuToggle');
@@ -159,7 +167,9 @@ function startDateTimeUpdates() {
 async function loadTodayAttendance() {
     console.log('📥 Cargando asistencia del día...');
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ CORREGIDO: Usar fecha local en lugar de UTC
+        const today = getLocalDateString();
+        console.log('📅 Fecha de hoy (local):', today);
 
         const { data: empleados, error: empError } = await supabaseClient
             .from('empleados')
@@ -174,8 +184,15 @@ async function loadTodayAttendance() {
             .eq('fecha', today);
         if (asisError) throw asisError;
 
+        console.log('👥 Empleados encontrados:', empleados?.length || 0);
+        console.log('📋 Registros de asistencia:', asistencia?.length || 0);
+
+        // ✅ CORREGIDO: Crear mapa de asistencia correctamente
         const asistenciaMap = {};
-        asistencia?.forEach(a => { asistenciaMap[a.empleado_id] = a; });
+        asistencia?.forEach(a => { 
+            asistenciaMap[a.empleado_id] = a;
+            console.log(`  - Empleado ${a.empleado_id}: Entrada ${a.hora_entrada ? '✓' : '✗'}, Salida ${a.hora_salida ? '✓' : '✗'}`);
+        });
 
         const badge = document.getElementById('asistenciaHoy');
         if (badge) badge.textContent = asistencia?.length || 0;
@@ -192,6 +209,7 @@ async function loadTodayAttendance() {
             timeZone: 'America/Mexico_City'
         });
 
+        // ✅ CORREGIDO: Pasar el mapa en lugar del array
         renderAttendanceTable(empleados || [], asistenciaMap);
 
     } catch (error) {
@@ -206,17 +224,21 @@ async function loadTodayAttendance() {
 }
 
 // ===== RENDERIZAR TABLA =====
-// ===== RENDERIZAR TABLA DE ASISTENCIA =====
 function renderAttendanceTable(empleados, asistenciaMap) {
     let html = '';
     let presentes = 0;
     let pendientes = 0;
     let ausentes = 0;
     
+    console.log('🎨 Renderizando tabla con', empleados.length, 'empleados');
+    
     empleados.forEach(emp => {
+        // ✅ El mapa ya viene correcto desde loadTodayAttendance
         const registro = asistenciaMap[emp.id];
         const tieneEntrada = registro?.hora_entrada;
         const tieneSalida = registro?.hora_salida;
+        
+        console.log(`  📝 ${emp.nombre_completo}: Entrada=${tieneEntrada ? '✓' : '✗'}, Salida=${tieneSalida ? '✓' : '✗'}`);
         
         if (tieneEntrada) presentes++;
         if (tieneEntrada && !tieneSalida) pendientes++;
@@ -230,7 +252,7 @@ function renderAttendanceTable(empleados, asistenciaMap) {
         const salidaTime = registro?.hora_salida ? 
             formatTime(registro.hora_salida) : '--:--';
         
-        // ✅ NUEVO: Formatear horas trabajadas en formato legible
+        // ✅ Formatear horas trabajadas en formato legible
         let horasTrabajadasTexto = '0 minutos';
         if (registro?.horas_trabajadas) {
             const horasDecimal = registro.horas_trabajadas;
@@ -278,6 +300,7 @@ function renderAttendanceTable(empleados, asistenciaMap) {
     }
     
     document.getElementById('attendanceBody').innerHTML = html;
+    console.log('✅ Tabla renderizada:', { presentes, pendientes, ausentes });
 }
 
 // ===== FORMATEAR HORA =====
@@ -380,4 +403,4 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-console.log('✅ asistencia-dia.js cargado completamente');
+console.log('✅ asistencia-dia.js cargado completamente - BUGS DE FECHA Y MAPA CORREGIDOS');

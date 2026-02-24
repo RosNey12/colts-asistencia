@@ -5,6 +5,14 @@ console.log('📊 Módulo de Reportes inicializando...');
 let supabaseClient = null;
 let currentData = [];
 
+// ===== FUNCIÓN PARA OBTENER FECHA LOCAL EN FORMATO YYYY-MM-DD =====
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // ===== INICIALIZACIÓN PRINCIPAL =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Inicializando reportes...');
@@ -169,17 +177,18 @@ async function loadEmpleados() {
 }
 
 // ===== CONFIGURAR FECHAS POR DEFECTO =====
-// CORRECCIÓN: toISOString() usa UTC y puede dar el día anterior en México (UTC-6)
-// Se usa toLocaleDateString con 'en-CA' para obtener YYYY-MM-DD en hora local
 function setDefaultDates() {
     const now = new Date();
-    const today = now.toLocaleDateString('en-CA'); // formato YYYY-MM-DD en zona local
+    // ✅ CORREGIDO: Usar función local para evitar problemas de UTC
+    const today = getLocalDateString(now);
 
     document.getElementById('fecha').value = today;
     
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    document.getElementById('fechaInicio').value = firstDay.toLocaleDateString('en-CA');
+    document.getElementById('fechaInicio').value = getLocalDateString(firstDay);
     document.getElementById('fechaFin').value = today;
+    
+    console.log('📅 Fechas configuradas:', { today, firstDay: getLocalDateString(firstDay) });
 }
 
 // ===== CONFIGURAR EVENTOS =====
@@ -239,9 +248,6 @@ function setupEvents() {
     }
     
     // ===== LOGOUT - CORREGIDO =====
-    // ANTES: se hacía replaceWith/cloneNode y luego se buscaba el nuevo elemento,
-    // lo que causaba que el listener nunca se adjuntara correctamente si el DOM
-    // no había terminado de actualizarse.
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
@@ -249,13 +255,10 @@ function setupEvents() {
             e.stopPropagation();
             console.log('🚪 Cerrando sesión desde reportes');
             
-            // window.confirm garantiza contexto global, evita bloqueos en async
             const confirmar = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
             if (confirmar) {
-                // Limpiar todo el storage de una vez
                 localStorage.clear();
                 sessionStorage.clear();
-                // replace() evita que el usuario regrese con el botón "atrás"
                 window.location.replace('../index.html');
             }
         });
@@ -291,9 +294,6 @@ function formatHorasTrabajadas(horasDecimal) {
 }
 
 // ===== GENERAR REPORTE =====
-// CORRECCIÓN: Se agregó bloqueo del botón durante la carga con try/finally
-// para garantizar que el botón siempre se restaure, incluso si hay un error.
-// Sin esto, un fallo de Supabase dejaba la UI "colgada" bloqueando otros eventos.
 async function generarReporte() {
     console.log('🔍 Generando reporte...');
     
@@ -315,29 +315,42 @@ async function generarReporte() {
             .select('*, empleados(nombre_completo, puesto)')
             .order('fecha', { ascending: false });
         
-        // Aplicar filtros de fecha
+        // ✅ CORREGIDO: Usar fechas locales
         if (tipo === 'dia') {
             const fecha = document.getElementById('fecha').value;
             if (!fecha) {
                 showNotification('Selecciona una fecha', 'warning');
                 return;
             }
+            console.log('📅 Filtrando por día:', fecha);
             query = query.eq('fecha', fecha);
             
         } else if (tipo === 'semana') {
             const hoy = new Date();
             const inicio = new Date(hoy);
             inicio.setDate(hoy.getDate() - 7);
+            
+            const fechaInicio = getLocalDateString(inicio);
+            const fechaFin = getLocalDateString(hoy);
+            
+            console.log('📅 Filtrando por semana:', fechaInicio, 'a', fechaFin);
+            
             query = query
-                .gte('fecha', inicio.toLocaleDateString('en-CA'))
-                .lte('fecha', hoy.toLocaleDateString('en-CA'));
+                .gte('fecha', fechaInicio)
+                .lte('fecha', fechaFin);
             
         } else if (tipo === 'mes') {
             const hoy = new Date();
             const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            
+            const fechaInicio = getLocalDateString(inicio);
+            const fechaFin = getLocalDateString(hoy);
+            
+            console.log('📅 Filtrando por mes:', fechaInicio, 'a', fechaFin);
+            
             query = query
-                .gte('fecha', inicio.toLocaleDateString('en-CA'))
-                .lte('fecha', hoy.toLocaleDateString('en-CA'));
+                .gte('fecha', fechaInicio)
+                .lte('fecha', fechaFin);
             
         } else if (tipo === 'rango') {
             const inicio = document.getElementById('fechaInicio').value;
@@ -353,6 +366,8 @@ async function generarReporte() {
                 return;
             }
             
+            console.log('📅 Filtrando por rango:', inicio, 'a', fin);
+            
             query = query
                 .gte('fecha', inicio)
                 .lte('fecha', fin);
@@ -360,12 +375,15 @@ async function generarReporte() {
         
         // Aplicar filtro de empleado
         if (empleadoId !== 'todos') {
+            console.log('👤 Filtrando por empleado:', empleadoId);
             query = query.eq('empleado_id', empleadoId);
         }
         
         const { data, error } = await query;
         
         if (error) throw error;
+        
+        console.log('📊 Registros encontrados:', data?.length || 0);
         
         currentData = data || [];
         renderTabla();
@@ -381,7 +399,7 @@ async function generarReporte() {
         showNotification('Error al generar el reporte', 'error');
         
     } finally {
-        // SIEMPRE restaurar el botón, sin importar si hubo error o no
+        // SIEMPRE restaurar el botón
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalBtnHTML;
@@ -414,9 +432,12 @@ function renderTabla() {
             // Formatear horas trabajadas
             const horasFormateadas = formatHorasTrabajadas(reg.horas_trabajadas);
             
+            // ✅ CORREGIDO: Mostrar fecha local correctamente
+            const fechaLocal = new Date(reg.fecha + 'T00:00:00').toLocaleDateString('es-MX');
+            
             html += `
                 <tr>
-                    <td>${new Date(reg.fecha).toLocaleDateString('es-MX')}</td>
+                    <td>${fechaLocal}</td>
                     <td>${reg.empleados?.nombre_completo || 'N/A'}</td>
                     <td>${reg.empleados?.puesto || 'N/A'}</td>
                     <td>${formatTime(reg.hora_entrada)}</td>
@@ -479,15 +500,19 @@ function exportarExcel() {
         
         // Crear datos para Excel
         const excelData = [
-            ['Fecha', 'Empleado', 'Puesto', 'Entrada', 'Salida', 'Horas Trabajadas (decimal)'],
-            ...currentData.map(reg => [
-                new Date(reg.fecha).toLocaleDateString('es-MX'),
-                reg.empleados?.nombre_completo || 'N/A',
-                reg.empleados?.puesto || 'N/A',
-                formatTime(reg.hora_entrada),
-                formatTime(reg.hora_salida),
-                reg.horas_trabajadas ? reg.horas_trabajadas.toFixed(2) : '0.00'
-            ])
+            ['Fecha', 'Empleado', 'Puesto', 'Entrada', 'Salida', 'Horas Trabajadas (decimal)', 'Horas Trabajadas (texto)'],
+            ...currentData.map(reg => {
+                const fechaLocal = new Date(reg.fecha + 'T00:00:00').toLocaleDateString('es-MX');
+                return [
+                    fechaLocal,
+                    reg.empleados?.nombre_completo || 'N/A',
+                    reg.empleados?.puesto || 'N/A',
+                    formatTime(reg.hora_entrada),
+                    formatTime(reg.hora_salida),
+                    reg.horas_trabajadas ? reg.horas_trabajadas.toFixed(2) : '0.00',
+                    formatHorasTrabajadas(reg.horas_trabajadas)
+                ];
+            })
         ];
         
         // Crear libro de Excel
@@ -501,13 +526,14 @@ function exportarExcel() {
             { wch: 20 }, // Puesto
             { wch: 10 }, // Entrada
             { wch: 10 }, // Salida
-            { wch: 20 }  // Horas
+            { wch: 20 }, // Horas (decimal)
+            { wch: 25 }  // Horas (texto)
         ];
         
         XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
         
         // Descargar archivo
-        const fecha = new Date().toLocaleDateString('en-CA');
+        const fecha = getLocalDateString();
         XLSX.writeFile(wb, `reporte_colts_${fecha}.xlsx`);
         
         showNotification('Excel generado exitosamente', 'success');
@@ -598,4 +624,4 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-console.log('✅ reportes.js cargado completamente - Bugs de logout, async y fechas corregidos');
+console.log('✅ reportes.js cargado completamente - BUGS DE FECHA UTC CORREGIDOS');

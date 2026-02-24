@@ -13,6 +13,14 @@ let scanType = 'entrada'; // 'entrada' o 'salida'
 // ===== AUDIO =====
 let audioContext = null;
 
+// ===== FUNCIÓN PARA OBTENER FECHA LOCAL EN FORMATO YYYY-MM-DD =====
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // ===== FUNCIÓN PARA OBTENER HORA ACTUAL EN MÉXICO =====
 function getMexicoDateTime() {
     const now = new Date();
@@ -164,6 +172,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupSound();
     loadSettings();
     
+    // Configurar auto-salida si estamos en modo salida
+    setupAutoSalidaChecker();
+    
     console.log('✅ Escáner QR listo');
 });
 
@@ -244,7 +255,9 @@ async function loadStats() {
     console.log('📊 Cargando estadísticas...');
     
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ CORREGIDO: Usar fecha local en lugar de UTC
+        const today = getLocalDateString();
+        console.log('📅 Fecha de hoy (local):', today);
         
         const { data: asistencia, error } = await supabaseClient
             .from('asistencia')
@@ -255,6 +268,8 @@ async function loadStats() {
             console.error('❌ Error cargando asistencia:', error);
             return;
         }
+        
+        console.log('📋 Registros de asistencia hoy:', asistencia?.length || 0);
         
         const { data: empleados, error: empError } = await supabaseClient
             .from('empleados')
@@ -271,6 +286,8 @@ async function loadStats() {
         const conSalida = asistencia?.filter(a => a.hora_salida !== null).length || 0;
         const pendientes = asistencia?.filter(a => a.hora_entrada !== null && a.hora_salida === null).length || 0;
         const sinEntrada = totalEmpleados - presentes;
+        
+        console.log(`📊 Estadísticas: Total=${totalEmpleados}, Presentes=${presentes}, ConSalida=${conSalida}, Pendientes=${pendientes}`);
         
         if (scanType === 'entrada') {
             safeSetText('presentesCount', presentes);
@@ -1069,10 +1086,12 @@ async function processQRCode(qrCode) {
 async function registrarEntrada(empleado) {
     console.log(`⏰ Registrando entrada para: ${empleado.nombre_completo}`);
     
-    const today = new Date().toISOString().split('T')[0];
+    // ✅ CORREGIDO: Usar fecha local en lugar de UTC
+    const today = getLocalDateString();
     const now = getMexicoDateTime();
     
-    console.log('📅 Hora de México:', now);
+    console.log('📅 Fecha (local):', today);
+    console.log('🕐 Hora de México:', now);
     
     try {
         const { data: existing, error: checkError } = await supabaseClient
@@ -1126,10 +1145,12 @@ async function registrarEntrada(empleado) {
 async function registrarSalida(empleado) {
     console.log(`⏰ Registrando salida para: ${empleado.nombre_completo}`);
     
-    const today = new Date().toISOString().split('T')[0];
+    // ✅ CORREGIDO: Usar fecha local en lugar de UTC
+    const today = getLocalDateString();
     const now = getMexicoDateTime();
     
-    console.log('📅 Hora de México:', now);
+    console.log('📅 Fecha (local):', today);
+    console.log('🕐 Hora de México:', now);
     
     try {
         const { data: existing, error: checkError } = await supabaseClient
@@ -1314,7 +1335,8 @@ async function showManualRegisterModal(empleadoId) {
         if (previewTime) previewTime.textContent = `Hora actual: ${currentTime}`;
         
         if (scanType === 'salida') {
-            const today = new Date().toISOString().split('T')[0];
+            // ✅ CORREGIDO: Usar fecha local
+            const today = getLocalDateString();
             const { data: registro } = await supabaseClient
                 .from('asistencia')
                 .select('hora_entrada')
@@ -1536,7 +1558,6 @@ function loadSettings() {
     }
 }
 
-
 // ===== GUARDAR CONFIGURACIÓN =====
 function saveSettings() {
     try {
@@ -1550,13 +1571,17 @@ function saveSettings() {
         console.error('Error guardando configuración:', error);
     }
 }
-// ===== EJECUTAR AUTO-SALIDA (NUEVO) =====
+
+// ===== EJECUTAR AUTO-SALIDA =====
 async function executeAutoSalida() {
     console.log('🤖 Ejecutando auto-salida para empleados pendientes...');
     
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ CORREGIDO: Usar fecha local
+        const today = getLocalDateString();
         const now = new Date();
+        
+        console.log('📅 Fecha de hoy (local):', today);
         
         // Establecer hora de salida a las 10:00 PM
         const salidaAuto = new Date(now);
@@ -1611,7 +1636,7 @@ async function executeAutoSalida() {
     }
 }
 
-// ===== CONFIGURAR VERIFICADOR DE AUTO-SALIDA (NUEVO) =====
+// ===== CONFIGURAR VERIFICADOR DE AUTO-SALIDA =====
 function setupAutoSalidaChecker() {
     // Solo configurar si estamos en la página de salida
     if (scanType !== 'salida') return;
@@ -1631,6 +1656,14 @@ function setupAutoSalidaChecker() {
         }
     }, 60000); // Cada minuto
 }
+
+// ===== CONFIGURAR MENÚ MÓVIL =====
+function setupMobileMenu() {
+    // Esta función puede estar definida en otro archivo común
+    // Si no existe, implementar fallback básico
+    console.log('📱 Configurando menú móvil...');
+}
+
 // ===== MOSTRAR NOTIFICACIÓN =====
 function showNotification(message, type = 'info') {
     console.log(`📢 Notificación [${type}]: ${message}`);
