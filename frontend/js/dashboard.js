@@ -6,6 +6,14 @@ let supabaseClient = null;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
+// ===== FUNCIÓN PARA OBTENER FECHA LOCAL EN FORMATO YYYY-MM-DD =====
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // ===== INICIALIZACIÓN PRINCIPAL =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Iniciando dashboard...');
@@ -231,7 +239,9 @@ async function loadDashboardStats() {
     console.log('📈 Cargando estadísticas desde Supabase...');
     
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ CORREGIDO: Usar fecha local en lugar de UTC
+        const today = getLocalDateString();
+        console.log('📅 Fecha de hoy (local):', today);
         
         // 1. OBTENER TOTAL DE EMPLEADOS ACTIVOS (REAL)
         const { count: totalEmpleados, error: empError } = await supabaseClient
@@ -256,6 +266,14 @@ async function loadDashboardStats() {
         const conSalida = asistencia?.filter(a => a.hora_salida !== null).length || 0;
         const pendientes = presentes - conSalida;
         const faltas = (totalEmpleados || 0) - presentes;
+        
+        console.log(`✅ Estadísticas calculadas:`, {
+            totalEmpleados,
+            presentes,
+            conSalida,
+            pendientes,
+            faltas
+        });
         
         // 4. CALCULAR PORCENTAJES REALES
         const presentesPercent = totalEmpleados > 0 ? Math.round((presentes / totalEmpleados) * 100) : 0;
@@ -283,7 +301,11 @@ async function loadDashboardStats() {
             if (entradas.length > 0) {
                 const masTemprana = new Date(Math.min(...entradas));
                 document.getElementById('entradaMasTemprana').textContent = 
-                    masTemprana.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                    masTemprana.toLocaleTimeString('es-MX', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        timeZone: 'America/Mexico_City'
+                    });
             } else {
                 document.getElementById('entradaMasTemprana').textContent = '--:--';
             }
@@ -295,7 +317,7 @@ async function loadDashboardStats() {
         document.getElementById('empleadosChange').innerHTML = 
             `<i class="fas fa-users"></i> ${totalEmpleados || 0} activos totales`;
         
-        console.log('✅ Estadísticas actualizadas con datos reales');
+        console.log('✅ Estadísticas actualizadas con datos reales de fecha:', today);
         
     } catch (error) {
         console.error('❌ Error cargando estadísticas:', error);
@@ -345,7 +367,8 @@ async function loadRecentActivity() {
     if (!activityList) return;
     
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ CORREGIDO: Usar fecha local
+        const today = getLocalDateString();
         
         const { data: asistencia, error } = await supabaseClient
             .from('asistencia')
@@ -400,8 +423,16 @@ async function loadRecentActivity() {
                         <p>${texto} - ${empleado?.puesto || 'Sin puesto'}</p>
                     </div>
                     <div class="activity-time">
-                        ${hora ? hora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                        ${horaSalida ? ` / ${horaSalida.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                        ${hora ? hora.toLocaleTimeString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            timeZone: 'America/Mexico_City'
+                        }) : '--:--'}
+                        ${horaSalida ? ` / ${horaSalida.toLocaleTimeString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            timeZone: 'America/Mexico_City'
+                        })}` : ''}
                     </div>
                 </div>
             `;
@@ -480,11 +511,15 @@ async function updateCalendarGrid() {
     const ultimoDia = new Date(currentYear, currentMonth + 1, 0);
     
     try {
+        // ✅ Usar formato local para las fechas
+        const fechaInicio = getLocalDateString(primerDia);
+        const fechaFin = getLocalDateString(ultimoDia);
+        
         const { data: asistencia, error } = await supabaseClient
             .from('asistencia')
             .select('fecha')
-            .gte('fecha', primerDia.toISOString().split('T')[0])
-            .lte('fecha', ultimoDia.toISOString().split('T')[0]);
+            .gte('fecha', fechaInicio)
+            .lte('fecha', fechaFin);
         
         if (error) throw error;
         
@@ -700,4 +735,4 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-console.log('🔥 dashboard.js cargado correctamente - Menú móvil corregido');
+console.log('🔥 dashboard.js cargado correctamente - FIX DE ZONA HORARIA APLICADO');
